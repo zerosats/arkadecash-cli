@@ -48,7 +48,7 @@ export class Daemon {
     console.log(`Current state: ${state}`)
 
     if (state === 'UNINITIALIZED') {
-      console.log('Not initialized. Run `arkadecash-cli init` first.')
+      console.log('Not initialized. Run `arkadecash init` first.')
       return
     }
 

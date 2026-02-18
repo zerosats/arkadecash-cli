@@ -1,15 +1,13 @@
 {
-  "name": "@arkade-os/arkadecash-cli",
+  "name": "@zerosats/arkadecash-cli",
   "version": "0.1.0",
   "description": "Arkade Cash CLI - Unified Bitcoin payments for AI agents via Arkade, Boltz, Lendasat, Cashu, and Fedimint",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "arkadecash-cli": "dist/bin/arkadecash.js",
-    "arkadecash-daemon": "dist/bin/arkadecashd.js",
-    "pp": "dist/bin/pp.js",
-    "ppd": "dist/bin/ppd.js"
+    "arkadecash": "dist/bin/arkadecash.js",
+    "arkadecash-daemon": "dist/bin/arkadecashd.js"
   },
   "exports": {
     ".": {
@@ -22,6 +20,7 @@
     "dev": "tsc --watch",
     "start": "node dist/bin/arkadecashd.js",
     "cli": "node dist/bin/arkadecash.js",
+    "prepublishOnly": "npm run build && npm run typecheck",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts"
@@ -48,7 +47,7 @@
     "dist",
     "README.md"
   ],
-  "author": "Arkade",
+  "author": "zerosats",
   "license": "MIT",
   "dependencies": {
     "@arkade-os/boltz-swap": "0.2.12",

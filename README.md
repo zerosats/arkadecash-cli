@@ -1,27 +1,27 @@
-# arkadecash-cli
+# arkadecash
 
 Unified Bitcoin payments for AI agents. Manages funds across Arkade, Cashu, Fedimint, Boltz (Lightning), and Lendasat (BTC↔stablecoin swaps). Ships as both a CLI and an MCP server for agent tool-use.
 
 ## Install
 
 ```bash
-npm install -g @arkade-os/arkadecash-cli
+npm install -g @zerosats/arkadecash-cli
 ```
 
 ## Quick Start
 
 ```bash
 # Initialize with a new seed
-arkadecash-cli init
+arkadecash init
 
 # Unlock the daemon
-arkadecash-cli unlock
+arkadecash unlock
 
 # Check balances
-arkadecash-cli balance
+arkadecash balance
 
 # List registered mints
-arkadecash-cli mints
+arkadecash mints
 ```
 
 ## CLI Commands
@@ -29,48 +29,48 @@ arkadecash-cli mints
 ### Wallet Management
 
 ```bash
-arkadecash-cli init                      # Create new seed (or --mnemonic to restore)
-arkadecash-cli unlock                    # Unlock with password
-arkadecash-cli lock                      # Lock the daemon
-arkadecash-cli status                    # Show daemon state
-arkadecash-cli balance                   # Aggregate balance across all wallets
-arkadecash-cli mints                     # List registered mints
-arkadecash-cli add-mint --type cashu --url <mint-url>
-arkadecash-cli add-mint --type fedimint --invite <code>
+arkadecash init                      # Create new seed (or --mnemonic to restore)
+arkadecash unlock                    # Unlock with password
+arkadecash lock                      # Lock the daemon
+arkadecash status                    # Show daemon state
+arkadecash balance                   # Aggregate balance across all wallets
+arkadecash mints                     # List registered mints
+arkadecash add-mint --type cashu --url <mint-url>
+arkadecash add-mint --type fedimint --invite <code>
 ```
 
 ### Payments
 
 ```bash
-arkadecash-cli deposit <amount_sats>     # Create Lightning invoice to receive
-arkadecash-cli pay <bolt11_invoice>      # Pay from a private mint
-arkadecash-cli send <mint_id> <amount>   # Create bearer ecash token
-arkadecash-cli receive <token>           # Redeem bearer ecash token
+arkadecash deposit <amount_sats>     # Create Lightning invoice to receive
+arkadecash pay <bolt11_invoice>      # Pay from a private mint
+arkadecash send <mint_id> <amount>   # Create bearer ecash token
+arkadecash receive <token>           # Redeem bearer ecash token
 ```
 
 ### Lightning (via Boltz)
 
 ```bash
-arkadecash-cli lightning send <invoice>       # Pay invoice via submarine swap
-arkadecash-cli lightning receive <amount>     # Create invoice via reverse swap
-arkadecash-cli lightning fees                 # Show swap fee structure
+arkadecash lightning send <invoice>       # Pay invoice via submarine swap
+arkadecash lightning receive <amount>     # Create invoice via reverse swap
+arkadecash lightning fees                 # Show swap fee structure
 ```
 
 ### BTC↔Stablecoin Swaps (via Lendasat)
 
 ```bash
-arkadecash-cli swap quote <from> <to> <amount>
-arkadecash-cli swap create <address> <amount> <token>
-arkadecash-cli swap status <swap_id>
-arkadecash-cli swap list
-arkadecash-cli swap claim <swap_id>
-arkadecash-cli swap pairs
+arkadecash swap quote <from> <to> <amount>
+arkadecash swap create <address> <amount> <token>
+arkadecash swap status <swap_id>
+arkadecash swap list
+arkadecash swap claim <swap_id>
+arkadecash swap pairs
 ```
 
 ### Inspect
 
 ```bash
-arkadecash-cli tools                     # List all available tool definitions
+arkadecash tools                     # List all available tool definitions
 ```
 
 ## Daemon
@@ -86,6 +86,19 @@ arkadecash-daemon --no-mcp               # Disable MCP server
 ## MCP Server
 
 The daemon exposes all tools via [Model Context Protocol](https://modelcontextprotocol.io) over stdio. Add to your agent's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "arkadecash": {
+      "command": "npx",
+      "args": ["@zerosats/arkadecash-cli", "daemon", "-p", "<password>"]
+    }
+  }
+}
+```
+
+Or if installed globally:
 
 ```json
 {

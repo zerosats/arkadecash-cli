@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
@@ -7,11 +8,14 @@ import {
 import { TOOL_DEFINITIONS } from '../tools/definitions.js'
 import { executeTool } from '../tools/executor.js'
 
+const require = createRequire(import.meta.url)
+const { version } = require('../../package.json')
+
 export function createMcpServer(): Server {
   const server = new Server(
     {
-      name: 'private-payments',
-      version: '0.1.0',
+      name: 'arkadecash',
+      version,
     },
     {
       capabilities: {

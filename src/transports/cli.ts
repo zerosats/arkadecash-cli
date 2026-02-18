@@ -1,6 +1,10 @@
+import { createRequire } from 'node:module'
 import { Command } from 'commander'
 import { createInterface } from 'node:readline'
 import { loadConfig } from '../config/loader.js'
+
+const require = createRequire(import.meta.url)
+const { version } = require('../../package.json')
 import { initStorage, closeStorage } from '../storage/sqlite.js'
 import { createSeed, unlockSeed, lockSeed, hasSeed } from '../state/seed.js'
 import { getDaemonState } from '../state/machine.js'
@@ -28,9 +32,9 @@ export function createCli(): Command {
   const program = new Command()
 
   program
-    .name('arkadecash-cli')
-    .description('Arkade Cash CLI - Bitcoin payments via Arkade, Boltz, Lendasat, Cashu, and Fedimint')
-    .version('0.1.0')
+    .name('arkadecash')
+    .description('Arkade Cash - Unified Bitcoin payments for AI agents via Arkade, Boltz, Lendasat, Cashu, and Fedimint')
+    .version(version)
 
   program
     .command('init')
@@ -42,7 +46,7 @@ export function createCli(): Command {
       initStorage(config.dbPath!)
 
       if (hasSeed()) {
-        console.log('Already initialized. Use `arkadecash-cli unlock` to unlock.')
+        console.log('Already initialized. Use `arkadecash unlock` to unlock.')
         process.exit(1)
       }
 

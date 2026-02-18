@@ -5,10 +5,14 @@ import { startDaemon } from '../daemon.js'
 
 const program = new Command()
 
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const { version } = require('../../package.json')
+
 program
-  .name('arkadecash-daemon')
-  .description('Arkade Cash Daemon - Bitcoin payments via Arkade, Boltz, Lendasat, Cashu, and Fedimint')
-  .version('0.1.0')
+  .name('arkadecash')
+  .description('Arkade Cash - Unified Bitcoin payments for AI agents via Arkade, Boltz, Lendasat, Cashu, and Fedimint')
+  .version(version)
 
 program
   .option('-c, --config <path>', 'Config file path')
