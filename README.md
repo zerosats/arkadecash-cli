@@ -12,7 +12,10 @@ Unified Bitcoin payments for AI agents. Manages funds across Arkade, Cashu, Fedi
 ## Install
 
 ```bash
-npm install -g @zerosats/arkadecash-cli
+git clone https://github.com/zerosats/arkadecash-cli.git
+  cd arkadecash-cli
+  npm install
+  npm run build
 ```
 
 ## Quick Start
