@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { Command } from 'commander'
 import { createInterface } from 'node:readline'
 import { loadConfig } from '../config/loader.js'
+import type { DaemonConfig } from '../config/schema.js'
 
 const require = createRequire(import.meta.url)
 const { version } = require('../../package.json')
@@ -28,6 +29,15 @@ async function promptPassword(prompt: string): Promise<string> {
   })
 }
 
+async function ensureUnlocked(config: DaemonConfig, password?: string): Promise<void> {
+  initStorage(config.dbPath!)
+  if (!hasSeed()) throw new Error('Not initialized. Run `arkadecash init` first.')
+  if (!password) throw new Error('Daemon not running. Pass --password to auto-unlock, or use the daemon.')
+  const mnemonic = unlockSeed(password)
+  initOrchestrator(config.arkade, config.defaultSplitStrategy, config.boltz, config.lendasat, config.dbPath)
+  await getOrchestrator().initialize(mnemonic)
+}
+
 export function createCli(): Command {
   const program = new Command()
 
@@ -40,6 +50,7 @@ export function createCli(): Command {
     .command('init')
     .description('Initialize the daemon with a new seed or existing mnemonic')
     .option('-m, --mnemonic <words>', 'Use existing mnemonic phrase')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
@@ -50,12 +61,16 @@ export function createCli(): Command {
         process.exit(1)
       }
 
-      const password = await promptPassword('Enter password to encrypt seed: ')
-      const confirmPassword = await promptPassword('Confirm password: ')
-
-      if (password !== confirmPassword) {
-        console.error('Passwords do not match')
-        process.exit(1)
+      let password: string
+      if (options.password) {
+        password = options.password
+      } else {
+        password = await promptPassword('Enter password to encrypt seed: ')
+        const confirmPassword = await promptPassword('Confirm password: ')
+        if (password !== confirmPassword) {
+          console.error('Passwords do not match')
+          process.exit(1)
+        }
       }
 
       const mnemonic = createSeed(password, options.mnemonic)
@@ -71,12 +86,13 @@ export function createCli(): Command {
   program
     .command('unlock')
     .description('Unlock the daemon with password')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
       initStorage(config.dbPath!)
 
-      const password = await promptPassword('Enter password: ')
+      const password = options.password ?? await promptPassword('Enter password: ')
 
       try {
         const mnemonic = unlockSeed(password)
@@ -142,10 +158,11 @@ export function createCli(): Command {
   program
     .command('balance')
     .description('Show balances')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('balance', {})
       if (result.success) {
@@ -160,10 +177,11 @@ export function createCli(): Command {
   program
     .command('mints')
     .description('List registered mints')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('list_mints', {})
       if (result.success) {
@@ -179,10 +197,11 @@ export function createCli(): Command {
     .command('deposit <amount>')
     .description('Create deposit invoice')
     .option('-m, --mint <id>', 'Specific mint ID')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (amount, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('deposit', {
         amount_sats: parseInt(amount, 10),
@@ -202,10 +221,11 @@ export function createCli(): Command {
     .command('pay <invoice>')
     .description('Pay Lightning invoice')
     .option('-m, --mint <id>', 'Specific mint to pay from')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (invoice, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('pay', {
         invoice,
@@ -224,10 +244,11 @@ export function createCli(): Command {
   program
     .command('send <mint_id> <amount>')
     .description('Create ecash token')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (mintId, amount, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('send_ecash', {
         mint_id: mintId,
@@ -247,10 +268,11 @@ export function createCli(): Command {
     .command('receive <token>')
     .description('Receive ecash token')
     .option('-m, --mint <id>', 'Mint ID (auto-detected if not provided)')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (token, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('receive_ecash', {
         token,
@@ -273,16 +295,40 @@ export function createCli(): Command {
     .option('-u, --url <url>', 'Cashu mint URL')
     .option('-i, --invite <code>', 'Fedimint invite code')
     .option('-n, --name <name>', 'Mint name')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('add_mint', {
         type: options.type,
         url: options.url,
         invite_code: options.invite,
         name: options.name,
+      })
+
+      if (result.success) {
+        console.log(JSON.stringify(result.data, null, 2))
+      } else {
+        console.error('Error:', result.error)
+      }
+
+      closeStorage()
+    })
+
+  program
+    .command('arkade-send <address> <amount>')
+    .description('Send Bitcoin to an Arkade address (ark1...)')
+    .option('-p, --password <password>', 'Password (non-interactive)')
+    .option('-c, --config <path>', 'Config file path')
+    .action(async (address, amount, options) => {
+      const config = loadConfig(options.config)
+      await ensureUnlocked(config, options.password)
+
+      const result = await executeTool('arkade_send', {
+        address,
+        amount_sats: parseInt(amount, 10),
       })
 
       if (result.success) {
@@ -301,10 +347,11 @@ export function createCli(): Command {
   lightning
     .command('send <invoice>')
     .description('Pay a Lightning invoice via Boltz submarine swap')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (invoice, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('lightning_send', { invoice })
       if (result.success) {
@@ -320,10 +367,11 @@ export function createCli(): Command {
     .command('receive <amount>')
     .description('Create a Lightning invoice via Boltz reverse swap')
     .option('-d, --description <desc>', 'Invoice description')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (amount, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('lightning_receive', {
         amount_sats: parseInt(amount, 10),
@@ -342,10 +390,11 @@ export function createCli(): Command {
   lightning
     .command('fees')
     .description('Show Boltz swap fees and limits')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('lightning_fees', {})
       if (result.success) {
@@ -364,10 +413,11 @@ export function createCli(): Command {
   swap
     .command('quote <from> <to> <amount>')
     .description('Get a swap quote')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (from, to, amount, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_quote', {
         from,
@@ -388,10 +438,11 @@ export function createCli(): Command {
     .command('create <target_address> <target_amount> <target_token>')
     .description('Create a BTC→stablecoin swap')
     .option('-n, --network <network>', 'Target network', 'polygon')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (targetAddress, targetAmount, targetToken, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_create', {
         target_address: targetAddress,
@@ -412,10 +463,11 @@ export function createCli(): Command {
   swap
     .command('status <swap_id>')
     .description('Check swap status')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (swapId, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_status', { swap_id: swapId })
       if (result.success) {
@@ -430,10 +482,11 @@ export function createCli(): Command {
   swap
     .command('list')
     .description('List all swaps')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_list', {})
       if (result.success) {
@@ -448,10 +501,11 @@ export function createCli(): Command {
   swap
     .command('claim <swap_id>')
     .description('Claim a completed swap')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (swapId, options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_claim', { swap_id: swapId })
       if (result.success) {
@@ -466,10 +520,11 @@ export function createCli(): Command {
   swap
     .command('pairs')
     .description('List supported trading pairs')
+    .option('-p, --password <password>', 'Password (non-interactive)')
     .option('-c, --config <path>', 'Config file path')
     .action(async (options) => {
       const config = loadConfig(options.config)
-      initStorage(config.dbPath!)
+      await ensureUnlocked(config, options.password)
 
       const result = await executeTool('swap_pairs', {})
       if (result.success) {

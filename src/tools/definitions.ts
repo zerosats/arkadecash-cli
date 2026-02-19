@@ -162,6 +162,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
+    name: 'arkade_send',
+    description: 'Send Bitcoin to an Arkade address (ark1...)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Arkade address (ark1...)' },
+        amount_sats: { type: 'number', description: 'Amount in satoshis' },
+      },
+      required: ['address', 'amount_sats'],
+    },
+  },
+  {
     name: 'arkade_balance',
     description: 'Get Arkade wallet balance (non-private Bitcoin)',
     inputSchema: {

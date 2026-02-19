@@ -44,6 +44,11 @@ interface AddMintParams {
   name?: string
 }
 
+interface ArkadeSendParams {
+  address: string
+  amount_sats: number
+}
+
 interface LightningSendParams {
   invoice: string
 }
@@ -108,6 +113,9 @@ export async function executeTool(
 
       case 'add_mint':
         return await executeAddMint(params as unknown as AddMintParams)
+
+      case 'arkade_send':
+        return await executeArkadeSend(params as unknown as ArkadeSendParams)
 
       case 'arkade_balance':
         return await executeArkadeBalance()
@@ -330,6 +338,20 @@ async function executeAddMint(params: AddMintParams): Promise<ToolResult> {
   }
 
   return { success: false, error: 'Invalid mint type' }
+}
+
+async function executeArkadeSend(params: ArkadeSendParams): Promise<ToolResult> {
+  const arkade = getArkadeService()
+  const txid = await arkade.sendBitcoin(params.address, params.amount_sats)
+
+  return {
+    success: true,
+    data: {
+      txid,
+      address: params.address,
+      amount_sats: params.amount_sats,
+    },
+  }
 }
 
 async function executeArkadeBalance(): Promise<ToolResult> {

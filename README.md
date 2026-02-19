@@ -2,6 +2,13 @@
 
 Unified Bitcoin payments for AI agents. Manages funds across Arkade, Cashu, Fedimint, Boltz (Lightning), and Lendasat (BTC↔stablecoin swaps). Ships as both a CLI and an MCP server for agent tool-use.
 
+## Prerequisites
+
+- Node.js >= 20
+- npm
+
+> **Note**: This is a Node.js/TypeScript project. It does NOT use Rust/Cargo.
+
 ## Install
 
 ```bash

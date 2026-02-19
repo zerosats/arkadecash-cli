@@ -99,13 +99,26 @@ export class LendasatService {
       this.initialized = true
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
-      console.warn(`Lendasat initialization failed: ${msg}`)
-      console.warn('Lendasat swap features will be unavailable')
+      if (msg.includes('createSqliteWalletStorage')) {
+        console.warn('Lendasat: @lendasat/lendaswap-sdk-native is missing createSqliteWalletStorage. Upgrade the package or install a compatible version.')
+      } else if (msg.includes('Cannot find module') || msg.includes('ERR_MODULE_NOT_FOUND')) {
+        console.warn('Lendasat: @lendasat/lendaswap-sdk-native not installed. Run: npm install @lendasat/lendaswap-sdk-native')
+      } else {
+        console.warn(`Lendasat initialization failed: ${msg}`)
+      }
+      console.warn('Swap features (BTC↔stablecoin) will be unavailable.')
     }
   }
 
   isInitialized(): boolean {
     return this.initialized
+  }
+
+  isAvailable(): { available: boolean; reason?: string } {
+    if (this.initialized && this.client) {
+      return { available: true }
+    }
+    return { available: false, reason: 'Lendasat service not initialized. The @lendasat/lendaswap-sdk-native package may be missing or incompatible.' }
   }
 
   private ensureInitialized(): LendasatClient {

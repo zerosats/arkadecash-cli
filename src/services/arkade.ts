@@ -116,6 +116,12 @@ export class ArkadeService {
     return wallet.getVtxos()
   }
 
+  async sendBitcoin(address: string, amountSats: number): Promise<string> {
+    const { wallet } = this.ensureInitialized()
+    const txid = await wallet.sendBitcoin(address, Number(amountSats))
+    return txid
+  }
+
   async payInvoice(invoice: string): Promise<{ amountSats: number; preimage: string; txid: string }> {
     const { lightning } = this.ensureInitialized()
 
